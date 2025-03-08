@@ -311,14 +311,12 @@ function findDuplicateSteps(featureFilenames, featureFiles) {
   for (let i = 0; i < featureFilenames.length; i++) {
     const filename = featureFilenames[i];
     const featureFile = featureFiles[i];
-    // Find registers: backgrounds, scenarios, scenario outlines, and examples.
     let registers = [];
     
     function getMatches(pattern) {
       pattern.lastIndex = 0;
       let match;
       while ((match = pattern.exec(featureFile)) !== null) {
-        // Compute line number: count newlines before the match.
         const lineNumber = featureFile.slice(0, match.index).split('\n').length;
         registers.push({ register: match[0].trim(), lineNumber });
       }
@@ -412,6 +410,56 @@ function duplicateStepsStructure(filename, registerLine, stutteringCounts, regis
 }
 
 /* ===============================================
+   Detector: Find Duplicate Test Cases
+   =============================================== */
+/**
+ * Finds duplicate test cases in feature files by comparing the body (excluding the first line) of each test case.
+ *
+ * @param {string[]} filenames - Array of feature file names.
+ * @param {string[]} fileContents - Array of feature file contents.
+ * @returns {Object} An object with totalTestCases and an array of duplicate test cases.
+ */
+function findDuplicateTestCases(filenames, fileContents) {
+  // This regex captures test cases starting with "Scenario:", "Example:" or "Scenario Outline:".
+  // It captures the title (first line) and the rest (body) separately.
+  const testCaseRegex = /(Scenario:[^\n]*|Example:[^\n]*|Scenario Outline:[^\n]*)([\s\S]*?)(?=\n(?:\n\s*)*[@#]|Scenario:|Example:|Examples:|Scenario Outline:|Rule:|$)/g;
+  const testCaseCount = {};
+  let totalTestCases = 0;
+
+  filenames.forEach((filename, idx) => {
+    const text = fileContents[idx];
+    let match;
+    while ((match = testCaseRegex.exec(text)) !== null) {
+      totalTestCases++;
+      const fullTestCase = match[0].trim();
+      const lineNumber = text.slice(0, match.index).split('\n').length;
+      const testCaseLines = fullTestCase.split('\n');
+      // Exclude the first line (title) for comparison.
+      const testCaseBody = testCaseLines.slice(1).join('\n').trim();
+      if (!testCaseCount[testCaseBody]) {
+        testCaseCount[testCaseBody] = { count: 0, titlesAndFiles: [] };
+      }
+      testCaseCount[testCaseBody].count++;
+      testCaseCount[testCaseBody].titlesAndFiles.push(`${filename}:${lineNumber} - ${testCaseLines[0].trim()}`);
+    }
+  });
+
+  const duplicateTestCases = [];
+  for (const body in testCaseCount) {
+    if (testCaseCount[body].count > 1) {
+      duplicateTestCases.push({
+        count: testCaseCount[body].count,
+        titlesAndFiles: testCaseCount[body].titlesAndFiles.join('\n'),
+        testCaseBody: body
+      });
+    }
+  }
+  duplicateTestCases.sort((a, b) => a.titlesAndFiles.localeCompare(b.titlesAndFiles));
+
+  return { totalTestCases, duplicateTestCases };
+}
+
+/* ===============================================
    Single Endpoint: Run All Smell Detections
    =============================================== */
 
@@ -427,13 +475,15 @@ app.post('/run-detection', upload.array('files'), (req, res) => {
   const absenceBackground = findAbsenceBackground(fileNames, fileContents);
   const duplicateScenarioTitles = findDuplicateScenarioTitles(fileNames, fileContents);
   const duplicateSteps = findDuplicateSteps(fileNames, fileContents);
+  const duplicateTestCases = findDuplicateTestCases(fileNames, fileContents);
 
   res.json({
     untitledFeatures,
     duplicateFeatureTitles,
     absenceBackground,
     duplicateScenarioTitles,
-    duplicateSteps
+    duplicateSteps,
+    duplicateTestCases
   });
 });
 
