@@ -78,14 +78,14 @@ export function Catalog() {
             <div className="prose prose-blue max-w-none space-y-4">
               {/* Description */}
               <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Description</h2>
-                <p className="text-gray-600">{currentSmell.description}</p>
+                <div className="text-xl font-semibold text-gray-900">Description</div>
+                <p className="text-gray-600 mt-2 mb-0">{currentSmell.description}</p>
               </div>
 
               {/* Consequences */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Consequences</h2>
-                <ul className="space-y-3">
+              <div className="bg-white rounded-lg border border-gray-200 p-6 pb-2">
+                <div className="text-xl font-semibold text-gray-900">Consequences</div>
+                <ul className="space-y-3 mt-2">
                   {currentSmell.consequences.map((consequence, index) => (
                     <li key={index} className="flex items-start gap-3">
                       <div className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-red-500 mt-2" />
@@ -97,8 +97,8 @@ export function Catalog() {
 
               {/* Example */}
               <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Example</h2>
-                <div className="aspect-[16/9] bg-gray-50 rounded-lg overflow-hidden">
+                <div className="text-xl font-semibold text-gray-900">Example</div>
+                <div className="aspect-[16/9] bg-gray-50 rounded-lg overflow-hidden mt-2">
                   <img
                     src={currentSmell.image}
                     alt={`Example of ${currentSmell.title}`}
