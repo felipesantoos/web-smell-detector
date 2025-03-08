@@ -8,6 +8,7 @@ import {
   Footprints,
   Tag
 } from 'lucide-react';
+import { SmellsCharts } from './charts/SmellsCharts';
 import type { AnalysisResult } from '../types';
 
 interface DashboardProps {
@@ -21,68 +22,80 @@ interface SmellMetric {
   color: string;
 }
 
+const colorMap = {
+  purple: 'rgb(147, 51, 234)',
+  blue: 'rgb(37, 99, 235)',
+  amber: 'rgb(217, 119, 6)',
+  indigo: 'rgb(79, 70, 229)',
+  green: 'rgb(22, 163, 74)',
+  cyan: 'rgb(8, 145, 178)',
+  red: 'rgb(220, 38, 38)',
+  orange: 'rgb(234, 88, 12)',
+  teal: 'rgb(13, 148, 136)'
+};
+
 export function Dashboard({ results }: DashboardProps) {
   const metrics: SmellMetric[] = [
     {
       icon: Layout,
       name: 'Untitled Features',
       count: results.untitledFeatures.length,
-      color: 'text-purple-600',
+      color: colorMap.purple,
     },
     {
       icon: Copy,
       name: 'Duplicate Features',
       count: results.duplicateFeatureTitles.reportData.length,
-      color: 'text-blue-600',
+      color: colorMap.blue,
     },
     {
       icon: AlertTriangle,
       name: 'Missing Background',
       count: results.absenceBackground.absencesBackgrounds.length,
-      color: 'text-amber-600',
+      color: colorMap.amber,
     },
     {
       icon: Copy,
       name: 'Duplicate Scenarios',
       count: results.duplicateScenarioTitles.duplicateScenarioTitles.length,
-      color: 'text-indigo-600',
+      color: colorMap.indigo,
     },
     {
       icon: Repeat,
       name: 'Duplicate Steps',
       count: results.duplicateSteps.duplicateSteps.length,
-      color: 'text-green-600',
+      color: colorMap.green,
     },
     {
       icon: Copy,
       name: 'Duplicate Test Cases',
       count: results.duplicateTestCases.duplicateTestCases.length,
-      color: 'text-cyan-600',
+      color: colorMap.cyan,
     },
     {
       icon: AlertCircle,
       name: 'Malformed Tests',
       count: results.malformedTests.malformedRegisters.length,
-      color: 'text-red-600',
+      color: colorMap.red,
     },
     {
       icon: Footprints,
       name: 'Left Foot Starts',
       count: results.startingWithLeftFoot.leftFoots.length,
-      color: 'text-orange-600',
+      color: colorMap.orange,
     },
     {
       icon: Tag,
       name: 'Vicious Tags',
       count: results.viciousTags.viciousTags.length,
-      color: 'text-teal-600',
+      color: colorMap.teal,
     },
   ];
 
   const totalSmells = metrics.reduce((acc, metric) => acc + metric.count, 0);
 
   return (
-    <div className="mb-8">
+    <div className="mb-8 space-y-6">
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -97,8 +110,11 @@ export function Dashboard({ results }: DashboardProps) {
               key={index}
               className="bg-gray-50 rounded-lg p-4 flex items-center gap-4 transition-transform hover:scale-[1.02]"
             >
-              <div className={`p-3 rounded-lg ${metric.color} bg-opacity-10`}>
-                <metric.icon className={`h-6 w-6 ${metric.color}`} />
+              <div className="p-3 rounded-lg" style={{ 
+                backgroundColor: metric.color.replace('rgb', 'rgba').replace(')', ', 0.1)'),
+                color: metric.color 
+              }}>
+                <metric.icon className="h-6 w-6" />
               </div>
               <div>
                 <div className="text-sm text-gray-600">{metric.name}</div>
@@ -110,6 +126,8 @@ export function Dashboard({ results }: DashboardProps) {
           ))}
         </div>
       </div>
+
+      <SmellsCharts metrics={metrics} />
     </div>
   );
 }

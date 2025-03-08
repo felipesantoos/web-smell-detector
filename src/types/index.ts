@@ -20,6 +20,13 @@ export interface SmellResult {
   locations?: string[];
 }
 
+export interface SmellMetric {
+  icon: React.ElementType;
+  name: string;
+  count: number;
+  color: string;
+}
+
 export interface AnalysisResult {
   untitledFeatures: SmellResult[];
   duplicateFeatureTitles: {
