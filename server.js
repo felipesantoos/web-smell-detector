@@ -51,31 +51,63 @@ function findUntitledFeatures(filenames, fileContents) {
 }
 
 /**
- * Detector: Find Duplicate Feature Titles
- * This function extracts the first line starting with "Feature:" from each file and
- * then reports those titles that appear more than once.
+ * Detector: Find Duplicate Feature Titles (Advanced)
+ * This function extracts the first line starting with "Feature:" from each file,
+ * groups them by title, counts the occurrences, and returns overall totals along
+ * with a report of duplicate features.
+ *
+ * The returned object has the following structure:
+ * {
+ *   totalFeatures: <number>,
+ *   totalDistinctFeatures: <number>,
+ *   reportData: [
+ *     { feature: <string>, count: <number>, filenames: <string> },
+ *     ...
+ *   ]
+ * }
+ *
+ * @param {string[]} filenames - Array of feature file names.
+ * @param {string[]} fileContents - Array of feature file contents.
+ * @returns {Object} The analysis result.
  */
-function findDuplicateFeatureTitles(filenames, fileContents) {
-  const featureRegex = /Feature:\s*(.*)/;
+function findDuplicateFeatureTitlesAdvanced(filenames, fileContents) {
+  // Pattern to extract feature line (using MULTILINE mode)
+  const pattern = /Feature:.*$/m;
   const features = [];
 
   filenames.forEach((filename, idx) => {
-    const match = fileContents[idx].match(featureRegex);
+    const file = fileContents[idx];
+    const match = file.match(pattern);
     if (match) {
-      // Use the full matched line (including "Feature:") as the title
-      features.push({ title: match[0].trim(), filename });
+      features.push({ feature: match[0].trim(), filename });
     }
   });
 
-  // Count occurrences
-  const counts = {};
-  features.forEach(feat => {
-    counts[feat.title] = (counts[feat.title] || 0) + 1;
+  const totalFeatures = features.length;
+  const distinctFeatures = {};
+  features.forEach(({ feature, filename }) => {
+    if (distinctFeatures[feature]) {
+      distinctFeatures[feature].push(filename);
+    } else {
+      distinctFeatures[feature] = [filename];
+    }
   });
-
-  // Filter out features that appear only once
-  const duplicates = features.filter(feat => counts[feat.title] > 1);
-  return duplicates;
+  const totalDistinctFeatures = Object.keys(distinctFeatures).length;
+  const reportData = [];
+  Object.keys(distinctFeatures).forEach(feature => {
+    const files = distinctFeatures[feature];
+    const count = files.length;
+    if (count > 1) {
+      reportData.push({
+        feature,
+        count,
+        filenames: files.join('\n')
+      });
+    }
+  });
+  // Sort reportData by feature name
+  reportData.sort((a, b) => a.feature.localeCompare(b.feature));
+  return { totalFeatures, totalDistinctFeatures, reportData };
 }
 
 /* 
@@ -99,7 +131,7 @@ app.post('/run-detection', upload.array('files'), (req, res) => {
 
   // Run detectors on the uploaded files
   const untitledFeatures = findUntitledFeatures(fileNames, fileContents);
-  const duplicateFeatureTitles = findDuplicateFeatureTitles(fileNames, fileContents);
+  const duplicateFeatureTitles = findDuplicateFeatureTitlesAdvanced(fileNames, fileContents);
   // Additional detectors would be called here…
 
   // Send JSON response with results
