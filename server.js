@@ -19,8 +19,10 @@ function readFilesFromUpload(files) {
   return files.map(file => file.buffer.toString('utf-8'));
 }
 
+/* =============================
+   Detector: Find Untitled Features
+   ============================= */
 /**
- * Detector: Find Untitled Features
  * A feature is “untitled” if its line matches "Feature:" with no title following.
  *
  * @param {string[]} filenames - Array of feature file names.
@@ -35,11 +37,7 @@ function findUntitledFeatures(filenames, fileContents) {
     for (let i = 0; i < lines.length; i++) {
       if (pattern.test(lines[i])) {
         const matchedLine = lines[i].replace(/^\s+/, '');
-        results.push({
-          filename,
-          lineNumber: i + 1,
-          matchedLine
-        });
+        results.push({ filename, lineNumber: i + 1, matchedLine });
         break;
       }
     }
@@ -47,10 +45,13 @@ function findUntitledFeatures(filenames, fileContents) {
   return results;
 }
 
+/* ===============================================
+   Detector: Find Duplicate Feature Titles (Advanced)
+   =============================================== */
 /**
- * Detector: Find Duplicate Feature Titles (Advanced)
- * Extracts the first line starting with "Feature:" from each file, groups them by title,
- * counts occurrences, and returns overall totals along with a duplicate report.
+ * Extracts the first line starting with "Feature:" from each file,
+ * groups them by title, counts occurrences, and returns overall totals
+ * along with a duplicate report.
  *
  * @param {string[]} filenames - Array of feature file names.
  * @param {string[]} fileContents - Array of feature file contents.
@@ -92,9 +93,9 @@ function findDuplicateFeatureTitlesAdvanced(filenames, fileContents) {
   return { totalFeatures, totalDistinctFeatures, reportData };
 }
 
-/* =====================================================
+/* ===============================================
    Additional Detector: Absence of Background
-   ===================================================== */
+   =============================================== */
 
 /**
  * Helper function to mimic Python's match_structure.
@@ -174,7 +175,13 @@ function absenceAnalysis(filename, registers, stepPattern, partitionPattern, abs
     });
   });
   const absenceCounts = absenceCounter(stepsScenariosFeature);
-  totalAbsenceBackgrounds = absenceStructure(filename, absenceCounts, absencesBackgrounds, totalScenarios, totalAbsenceBackgrounds);
+  totalAbsenceBackgrounds = absenceStructure(
+    filename,
+    absenceCounts,
+    absencesBackgrounds,
+    totalScenarios,
+    totalAbsenceBackgrounds
+  );
   return totalAbsenceBackgrounds;
 }
 
@@ -238,10 +245,54 @@ function findAbsenceBackground(featureFilenames, featureFiles) {
     });
   }
   
-  return {
-    totalAbsenceBackgrounds,
-    absencesBackgrounds
-  };
+  return { totalAbsenceBackgrounds, absencesBackgrounds };
+}
+
+/* ===============================================
+   Detector: Find Duplicate Scenario Titles
+   =============================================== */
+/**
+ * Extracts scenario titles (ignoring the prefixes "Scenario:", "Example:", and "Scenario Outline:")
+ * and returns a report of duplicate titles with their counts and file locations.
+ *
+ * @param {string[]} filenames - Array of feature file names.
+ * @param {string[]} fileContents - Array of feature file contents.
+ * @returns {Object} An object with totalScenarioTitles and duplicateScenarioTitles array.
+ */
+function findDuplicateScenarioTitles(filenames, fileContents) {
+  const scenarioRegex = /^\s*(Scenario:|Example:|Scenario Outline:)\s*(.+)$/;
+  const titleCount = {};
+  let totalScenarioTitles = 0;
+  filenames.forEach((filename, idx) => {
+    const lines = fileContents[idx].split('\n');
+    lines.forEach((line, i) => {
+      const match = line.match(scenarioRegex);
+      if (match) {
+        totalScenarioTitles++;
+        const normalizedTitle = match[2].trim();
+        if (!titleCount[normalizedTitle]) {
+          titleCount[normalizedTitle] = { count: 0, locations: [] };
+        }
+        titleCount[normalizedTitle].count++;
+        titleCount[normalizedTitle].locations.push(`${filename}:${i + 1}`);
+      }
+    });
+  });
+  
+  const duplicateScenarioTitles = [];
+  for (const title in titleCount) {
+    if (titleCount[title].count > 1) {
+      const sortedLocations = titleCount[title].locations.sort();
+      duplicateScenarioTitles.push({
+        title,
+        count: titleCount[title].count,
+        locations: sortedLocations
+      });
+    }
+  }
+  duplicateScenarioTitles.sort((a, b) => a.title.localeCompare(b.title));
+  
+  return { totalScenarioTitles, duplicateScenarioTitles };
 }
 
 /* =====================================================
@@ -258,11 +309,13 @@ app.post('/run-detection', upload.array('files'), (req, res) => {
   const untitledFeatures = findUntitledFeatures(fileNames, fileContents);
   const duplicateFeatureTitles = findDuplicateFeatureTitlesAdvanced(fileNames, fileContents);
   const absenceBackground = findAbsenceBackground(fileNames, fileContents);
+  const duplicateScenarioTitles = findDuplicateScenarioTitles(fileNames, fileContents);
 
   res.json({
     untitledFeatures,
     duplicateFeatureTitles,
-    absenceBackground
+    absenceBackground,
+    duplicateScenarioTitles
   });
 });
 
