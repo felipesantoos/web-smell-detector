@@ -18,6 +18,7 @@ export function StartingWithLeftFoot({ items, totalLeftFoots }: StartingWithLeft
       icon={Footprints}
       title="Starting With Left Foot"
       count={totalLeftFoots}
+      data={items}
     >
       <div className="space-y-4">
         {items.map((item, index) => (

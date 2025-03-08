@@ -18,6 +18,7 @@ export function DuplicateSteps({ items, totalDuplicateSteps }: DuplicateStepsPro
       icon={Repeat}
       title="Duplicate Steps"
       count={totalDuplicateSteps}
+      data={items}
     >
       <div className="space-y-4">
         {items.map((item, index) => (

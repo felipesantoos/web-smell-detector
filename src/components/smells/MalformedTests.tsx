@@ -18,6 +18,7 @@ export function MalformedTests({ items, totalMalformedTests }: MalformedTestsPro
       icon={AlertCircle}
       title="Malformed Tests"
       count={totalMalformedTests}
+      data={items}
     >
       <div className="space-y-4">
         {items.map((item, index) => (

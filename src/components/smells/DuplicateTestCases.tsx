@@ -17,6 +17,7 @@ export function DuplicateTestCases({ items, totalTestCases }: DuplicateTestCases
       icon={Copy}
       title="Duplicate Test Cases"
       count={totalTestCases}
+      data={items}
     >
       <div className="space-y-4">
         {items.map((item, index) => (

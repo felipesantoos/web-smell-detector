@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TestTube } from 'lucide-react';
+import { TestTube, Download } from 'lucide-react';
 import { FileUpload } from './components/FileUpload';
 import {
   UntitledFeatures,
@@ -12,6 +12,7 @@ import {
   StartingWithLeftFoot,
   ViciousTags
 } from './components/smells';
+import { convertToCSV, downloadCSV } from './utils/csv';
 import type { AnalysisResult } from './types';
 
 function App() {
@@ -64,6 +65,29 @@ function App() {
     }
   };
 
+  const handleDownloadAll = () => {
+    if (!results) return;
+
+    const allData = [
+      { title: 'Untitled Features', data: results.untitledFeatures },
+      { title: 'Duplicate Features', data: results.duplicateFeatureTitles.reportData },
+      { title: 'Absence Background', data: results.absenceBackground.absencesBackgrounds },
+      { title: 'Duplicate Scenarios', data: results.duplicateScenarioTitles.duplicateScenarioTitles },
+      { title: 'Duplicate Steps', data: results.duplicateSteps.duplicateSteps },
+      { title: 'Duplicate Test Cases', data: results.duplicateTestCases.duplicateTestCases },
+      { title: 'Malformed Tests', data: results.malformedTests.malformedRegisters },
+      { title: 'Starting With Left Foot', data: results.startingWithLeftFoot.leftFoots },
+      { title: 'Vicious Tags', data: results.viciousTags.viciousTags }
+    ];
+
+    const csvContent = allData
+      .filter(section => section.data.length > 0)
+      .map(section => convertToCSV(section.data, section.title))
+      .join('\n\n');
+
+    downloadCSV(csvContent, 'all-test-smells.csv');
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -83,41 +107,52 @@ function App() {
         />
 
         {results && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <UntitledFeatures items={results.untitledFeatures} />
-            <DuplicateFeatures
-              items={results.duplicateFeatureTitles.reportData}
-              totalFeatures={results.duplicateFeatureTitles.totalFeatures}
-            />
-            <AbsenceBackground
-              items={results.absenceBackground.absencesBackgrounds}
-              totalAbsenceBackgrounds={results.absenceBackground.totalAbsenceBackgrounds}
-            />
-            <DuplicateScenarios
-              items={results.duplicateScenarioTitles.duplicateScenarioTitles}
-              totalScenarioTitles={results.duplicateScenarioTitles.totalScenarioTitles}
-            />
-            <DuplicateSteps
-              items={results.duplicateSteps.duplicateSteps}
-              totalDuplicateSteps={results.duplicateSteps.totalDuplicateSteps}
-            />
-            <DuplicateTestCases
-              items={results.duplicateTestCases.duplicateTestCases}
-              totalTestCases={results.duplicateTestCases.totalTestCases}
-            />
-            <MalformedTests
-              items={results.malformedTests.malformedRegisters}
-              totalMalformedTests={results.malformedTests.totalMalformedTests}
-            />
-            <StartingWithLeftFoot
-              items={results.startingWithLeftFoot.leftFoots}
-              totalLeftFoots={results.startingWithLeftFoot.totalLeftFoots}
-            />
-            <ViciousTags
-              items={results.viciousTags.viciousTags}
-              totalViciousTags={results.viciousTags.totalViciousTags}
-            />
-          </div>
+          <>
+            <div className="mb-6 flex justify-end">
+              <button
+                onClick={handleDownloadAll}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Download className="h-5 w-5" />
+                Download All Results
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <UntitledFeatures items={results.untitledFeatures} />
+              <DuplicateFeatures
+                items={results.duplicateFeatureTitles.reportData}
+                totalFeatures={results.duplicateFeatureTitles.totalFeatures}
+              />
+              <AbsenceBackground
+                items={results.absenceBackground.absencesBackgrounds}
+                totalAbsenceBackgrounds={results.absenceBackground.totalAbsenceBackgrounds}
+              />
+              <DuplicateScenarios
+                items={results.duplicateScenarioTitles.duplicateScenarioTitles}
+                totalScenarioTitles={results.duplicateScenarioTitles.totalScenarioTitles}
+              />
+              <DuplicateSteps
+                items={results.duplicateSteps.duplicateSteps}
+                totalDuplicateSteps={results.duplicateSteps.totalDuplicateSteps}
+              />
+              <DuplicateTestCases
+                items={results.duplicateTestCases.duplicateTestCases}
+                totalTestCases={results.duplicateTestCases.totalTestCases}
+              />
+              <MalformedTests
+                items={results.malformedTests.malformedRegisters}
+                totalMalformedTests={results.malformedTests.totalMalformedTests}
+              />
+              <StartingWithLeftFoot
+                items={results.startingWithLeftFoot.leftFoots}
+                totalLeftFoots={results.startingWithLeftFoot.totalLeftFoots}
+              />
+              <ViciousTags
+                items={results.viciousTags.viciousTags}
+                totalViciousTags={results.viciousTags.totalViciousTags}
+              />
+            </div>
+          </>
         )}
       </div>
     </div>

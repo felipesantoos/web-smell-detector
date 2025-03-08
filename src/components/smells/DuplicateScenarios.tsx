@@ -17,6 +17,7 @@ export function DuplicateScenarios({ items, totalScenarioTitles }: DuplicateScen
       icon={Copy}
       title="Duplicate Scenario Titles"
       count={totalScenarioTitles}
+      data={items}
     >
       <div className="space-y-4">
         {items.map((item, index) => (

@@ -17,6 +17,7 @@ export function ViciousTags({ items, totalViciousTags }: ViciousTagsProps) {
       icon={Tag}
       title="Vicious Tags"
       count={totalViciousTags}
+      data={items}
     >
       <div className="space-y-4">
         {items.map((item, index) => (

@@ -16,6 +16,7 @@ export function UntitledFeatures({ items }: UntitledFeaturesProps) {
       icon={Layout}
       title="Untitled Features"
       count={items.length}
+      data={items}
     >
       <div className="space-y-4">
         {items.map((item, index) => (
