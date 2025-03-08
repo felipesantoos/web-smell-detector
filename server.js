@@ -631,9 +631,77 @@ function escapeRegExp(string) {
 }
 
 /* ===============================================
+   Detector: Find Starting With The Left Foot
+   =============================================== */
+/**
+ * Finds all the "left foot" scenarios in feature files.
+ *
+ * A "left foot" scenario is detected when a scenario block's first step
+ * does not start with "Given" or "When".
+ *
+ * @param {string[]} featureFilenames - Array of feature file names.
+ * @param {string[]} featureFiles - Array of feature file contents.
+ * @returns {Object} An object with totalLeftFoots and an array of left foot records.
+ */
+function findStartingWithTheLeftFoot(featureFilenames, featureFiles) {
+  let leftFoots = [];
+  let totalLeftFoots = 0;
+  const scenarioPattern = /(Scenario:[\s\S]*?)(?=(?:([@#]\S*?)?Scenario:)|(?:([@#]\S*?)?Scenario Outline:)|(?:([@#]\S*?)?Example:)|(?:([@#]\S*?)?Rule:)|$)/g;
+  const scenarioOutlinePattern = /(Scenario Outline:[\s\S]*?)(?=(?:([@#]\S*?)?Scenario:)|(?:([@#]\S*?)?Scenario Outline:)|(?:([@#]\S*?)?Example:)|(?:([@#]\S*?)?Rule:)|$)/g;
+  const examplePattern = /(Example:[\s\S]*?)(?=(?:([@#]\S*?)?Scenario:)|(?:([@#]\S*?)?Scenario Outline:)|(?:([@#]\S*?)?Example:)|(?:([@#]\S*?)?Rule:)|$)/g;
+  const stepPattern = /(?:Scenario:|Scenario Outline:|Example:)[\s\S]*?(?:(Given[\s\S]*?|And[\s\S]*?|When[\s\S]*?|Then[\s\S]*?))(?=When|Then|Scenario:|Scenario Outline:|Example:|Examples:|Rule:|$)/g;
+  const partitionPattern = /(Given[\s\S]*?|And[\s\S]*?|But[\s\S]*?|Then[\s\S]*?)(?=Given|And|But|When|Then|Scenario:|Scenario Outline:|Example:|Examples:|Rule:|$)/;
+  
+  featureFiles.forEach((fileContent, idx) => {
+    const filename = featureFilenames[idx];
+    let registers = [];
+    
+    function collectMatches(pattern) {
+      pattern.lastIndex = 0;
+      let match;
+      while ((match = pattern.exec(fileContent)) !== null) {
+        const lineNumber = fileContent.slice(0, match.index).split('\n').length;
+        registers.push({ register: match[0].trim(), lineNumber });
+      }
+    }
+    collectMatches(scenarioPattern);
+    collectMatches(scenarioOutlinePattern);
+    collectMatches(examplePattern);
+    
+    totalLeftFoots = leftFootAnalysis(filename, registers, stepPattern, partitionPattern, leftFoots, totalLeftFoots);
+  });
+  
+  return { totalLeftFoots, leftFoots };
+}
+
+function leftFootAnalysis(filename, registers, stepPattern, partitionPattern, leftFoots, totalLeftFoots) {
+  registers.forEach((item, index) => {
+    item.register = item.register.replace(/\n\n/g, "\n").trim();
+    stepPattern.lastIndex = 0;
+    let untreatedSteps = item.register.match(stepPattern) || [];
+    untreatedSteps.forEach(uts => {
+      uts = uts.trim();
+      let steps = uts.split(partitionPattern).map(s => s.trim()).filter(s => s);
+      if (steps.length > 0 && !/^(Given|When)/.test(steps[0])) {
+        totalLeftFoots = leftFootStructure(filename, leftFoots, item.register, item.lineNumber, totalLeftFoots);
+        totalLeftFoots += 1;
+      }
+    });
+  });
+  return totalLeftFoots;
+}
+
+function leftFootStructure(filename, leftFoots, scenario, line, totalLeftFoots) {
+  leftFoots.push({
+    filename: `${filename}:${line}`,
+    left_foot: scenario
+  });
+  return totalLeftFoots;
+}
+
+/* ===============================================
    Single Endpoint: Run All Smell Detections
    =============================================== */
-
 app.post('/run-detection', upload.array('files'), (req, res) => {
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ error: "No files were uploaded." });
@@ -648,6 +716,7 @@ app.post('/run-detection', upload.array('files'), (req, res) => {
   const duplicateSteps = findDuplicateSteps(fileNames, fileContents);
   const duplicateTestCases = findDuplicateTestCases(fileNames, fileContents);
   const malformedTests = findMalformedTests(fileNames, fileContents);
+  const startingWithLeftFoot = findStartingWithTheLeftFoot(fileNames, fileContents);
 
   res.json({
     untitledFeatures,
@@ -656,7 +725,8 @@ app.post('/run-detection', upload.array('files'), (req, res) => {
     duplicateScenarioTitles,
     duplicateSteps,
     duplicateTestCases,
-    malformedTests
+    malformedTests,
+    startingWithLeftFoot
   });
 });
 
