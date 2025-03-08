@@ -191,7 +191,6 @@ function findAbsenceBackground(featureFilenames, featureFiles) {
   let absencesBackgrounds = [];
   let totalAbsenceBackgrounds = 0;
   
-  // Define regex patterns
   const scenarioPattern = /(Scenario:[\s\S]*?)(?=(?:([@#]\S*?)?Scenario:)|(?:([@#]\S*?)?Scenario Outline:)|(?:([@#]\S*?)?Example:)|(?:([@#]\S*?)?Rule:)|$)/g;
   const scenarioOutlinePattern = /(Scenario Outline:[\s\S]*?)(?=(?:([@#]\S*?)?Scenario:)|(?:([@#]\S*?)?Scenario Outline:)|(?:([@#]\S*?)?Example:)|(?:([@#]\S*?)?Rule:)|$)/g;
   const examplePattern = /(Example:[\s\S]*?)(?=(?:([@#]\S*?)?Scenario:)|(?:([@#]\S*?)?Scenario Outline:)|(?:([@#]\S*?)?Example:)|(?:([@#]\S*?)?Rule:)|$)/g;
@@ -420,12 +419,9 @@ function duplicateStepsStructure(filename, registerLine, stutteringCounts, regis
  * @returns {Object} An object with totalTestCases and an array of duplicate test cases.
  */
 function findDuplicateTestCases(filenames, fileContents) {
-  // This regex captures test cases starting with "Scenario:", "Example:" or "Scenario Outline:".
-  // It captures the title (first line) and the rest (body) separately.
   const testCaseRegex = /(Scenario:[^\n]*|Example:[^\n]*|Scenario Outline:[^\n]*)([\s\S]*?)(?=\n(?:\n\s*)*[@#]|Scenario:|Example:|Examples:|Scenario Outline:|Rule:|$)/g;
   const testCaseCount = {};
   let totalTestCases = 0;
-
   filenames.forEach((filename, idx) => {
     const text = fileContents[idx];
     let match;
@@ -434,7 +430,6 @@ function findDuplicateTestCases(filenames, fileContents) {
       const fullTestCase = match[0].trim();
       const lineNumber = text.slice(0, match.index).split('\n').length;
       const testCaseLines = fullTestCase.split('\n');
-      // Exclude the first line (title) for comparison.
       const testCaseBody = testCaseLines.slice(1).join('\n').trim();
       if (!testCaseCount[testCaseBody]) {
         testCaseCount[testCaseBody] = { count: 0, titlesAndFiles: [] };
@@ -443,7 +438,6 @@ function findDuplicateTestCases(filenames, fileContents) {
       testCaseCount[testCaseBody].titlesAndFiles.push(`${filename}:${lineNumber} - ${testCaseLines[0].trim()}`);
     }
   });
-
   const duplicateTestCases = [];
   for (const body in testCaseCount) {
     if (testCaseCount[body].count > 1) {
@@ -455,8 +449,185 @@ function findDuplicateTestCases(filenames, fileContents) {
     }
   }
   duplicateTestCases.sort((a, b) => a.titlesAndFiles.localeCompare(b.titlesAndFiles));
-
   return { totalTestCases, duplicateTestCases };
+}
+
+/* ===============================================
+   Detector: Find Malformed Tests
+   =============================================== */
+/**
+ * Finds all the malformed tests in the feature files.
+ *
+ * A malformed test is detected by analyzing test blocks (from backgrounds,
+ * scenarios, scenario outlines, and examples) for duplicate occurrences of
+ * the keywords "Given", "When", and "Then" (or missing counts).
+ *
+ * @param {string[]} featureFilenames - Array of feature file names.
+ * @param {string[]} featureFiles - Array of feature file contents.
+ * @returns {Object} An object with totalMalformedTests and an array of malformed test records.
+ */
+function findMalformedTests(featureFilenames, featureFiles) {
+  // Regex patterns (same as in the Python script)
+  const backgroundPattern = /(Background:.*)([\s\S]*?)(?=(?:([@#][\s\S]*?)?Scenario:)|(?:([@#][\s\S]*?)?Scenario Outline:)|(?:([@#][\s\S]*?)?Example:)|(?:([@#][\s\S]*?)?Rule:)|$)/g;
+  const scenarioPattern = /(Scenario:.*)([\s\S]*?)(?=(?:([@#][\s\S]*?)?Scenario:)|(?:([@#][\s\S]*?)?Scenario Outline:)|(?:([@#][\s\S]*?)?Example:)|(?:([@#][\s\S]*?)?Rule:)|$)/g;
+  const scenarioOutlinePattern = /(Scenario Outline:.*)([\s\S]*?)(?=(?:([@#][\s\S]*?)?Scenario:)|(?:([@#][\s\S]*?)?Scenario Outline:)|(?:([@#][\s\S]*?)?Example:)|(?:([@#][\s\S]*?)?Rule:)|$)/g;
+  const examplePattern = /(Example:.*)([\s\S]*?)(?=(?:([@#][\s\S]*?)?Scenario:)|(?:([@#][\s\S]*?)?Scenario Outline:)|(?:([@#][\s\S]*?)?Example:)|(?:([@#][\s\S]*?)?Rule:)|$)/g;
+  const stepPattern = /(Given.*|When.*|Then.*)/g;
+
+  let malformedRegisters = [];
+  let totalMalformedTests = 0;
+
+  for (let i = 0; i < featureFilenames.length; i++) {
+    const filename = featureFilenames[i];
+    const featureFile = featureFiles[i];
+
+    // Collect registers from backgrounds, scenarios, scenario outlines, and examples.
+    function collectMatches(pattern) {
+      pattern.lastIndex = 0;
+      let match;
+      let results = [];
+      while ((match = pattern.exec(featureFile)) !== null) {
+        const lineNumber = featureFile.slice(0, match.index).split('\n').length;
+        // In Python, for each match.groups()[1:] if group exists, add the full match.
+        // Here, we simply add the full match once if any group after the first exists.
+        for (let j = 1; j < match.length; j++) {
+          if (match[j]) {
+            results.push({ register: match[0].trim(), lineNumber });
+            break;
+          }
+        }
+      }
+      return results;
+    }
+
+    const backgrounds = collectMatches(backgroundPattern);
+    const scenarios = collectMatches(scenarioPattern);
+    const scenarioOutlines = collectMatches(scenarioOutlinePattern);
+    const examples = collectMatches(examplePattern);
+    const totalRegisters = backgrounds.concat(scenarios, scenarioOutlines, examples);
+
+    if (backgrounds.length !== 0) {
+      totalMalformedTests = malformedAnalysisBackgrounds(filename, backgrounds, stepPattern, malformedRegisters, totalMalformedTests);
+    }
+    totalMalformedTests = malformedAnalysis(filename, totalRegisters, stepPattern, malformedRegisters, totalMalformedTests);
+  }
+
+  if (malformedRegisters.length > 0) {
+    malformedRegisters.forEach(register => {
+      register.file_and_line = register.file_and_line.join('\n');
+      register.justification = register.justification.join('\n');
+    });
+  }
+  return { totalMalformedTests, malformedRegisters };
+}
+
+function malformedAnalysisBackgrounds(filename, registers, stepPattern, malformedRegisters, totalMalformedTests) {
+  const originalRegisters = registers.map(r => r.register);
+  for (let i = 0; i < registers.length; i++) {
+    registers[i].register = registers[i].register.replace(/\n\n/g, "\n").trim();
+    const register = registers[i].register;
+    const registerLine = registers[i].lineNumber;
+    const steps = register.match(stepPattern) || [];
+    const keywordCounts = malformedTestsCounter(steps);
+    totalMalformedTests = malformedTestsStructureBackgrounds(filename, registerLine, keywordCounts, originalRegisters[i], malformedRegisters, totalMalformedTests);
+  }
+  return totalMalformedTests;
+}
+
+function malformedAnalysis(filename, registers, stepPattern, malformedRegisters, totalMalformedTests) {
+  const originalRegisters = registers.map(r => r.register);
+  for (let i = 0; i < registers.length; i++) {
+    registers[i].register = registers[i].register.replace(/\n\n/g, "\n").trim();
+    const register = registers[i].register;
+    const registerLine = registers[i].lineNumber;
+    const steps = register.match(stepPattern) || [];
+    const keywordCounts = malformedTestsCounter(steps);
+    totalMalformedTests = malformedTestsStructure(filename, registerLine, keywordCounts, originalRegisters[i], malformedRegisters, totalMalformedTests);
+  }
+  return totalMalformedTests;
+}
+
+function malformedTestsCounter(steps) {
+  const keywordCounts = { "Given": 0, "When": 0, "Then": 0 };
+  steps.forEach(step => {
+    if (step.startsWith("Given")) {
+      keywordCounts["Given"] += 1;
+    } else if (step.startsWith("When")) {
+      keywordCounts["When"] += 1;
+    } else if (step.startsWith("Then")) {
+      keywordCounts["Then"] += 1;
+    }
+  });
+  return keywordCounts;
+}
+
+function malformedTestsStructureBackgrounds(filename, registerLine, keywordCounts, register, malformedRegisters, totalMalformedTests) {
+  let malformedKeywords = [];
+  let fileAndLine = [];
+  for (const keyword in keywordCounts) {
+    const count = keywordCounts[keyword];
+    if (count > 1) {
+      let stepLine = 0;
+      const lines = register.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        const regex = new RegExp(escapeRegExp(keyword));
+        if (regex.test(lines[i])) {
+          stepLine = registerLine + i + 1;
+          break;
+        }
+      }
+      fileAndLine.push(`${filename}:${stepLine}`);
+      malformedKeywords.push(`${keyword} appears ${count} times`);
+      totalMalformedTests += count;
+    }
+  }
+  if (malformedKeywords.length > 0) {
+    malformedRegisters.push({
+      file_and_line: fileAndLine,
+      justification: malformedKeywords,
+      register: register
+    });
+  }
+  return totalMalformedTests;
+}
+
+function malformedTestsStructure(filename, registerLine, keywordCounts, register, malformedRegisters, totalMalformedTests) {
+  let malformedKeywords = [];
+  let fileAndLine = [];
+  for (const keyword in keywordCounts) {
+    const count = keywordCounts[keyword];
+    if (count > 1) {
+      let stepLine = 0;
+      const lines = register.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        const regex = new RegExp(escapeRegExp(keyword));
+        if (regex.test(lines[i])) {
+          stepLine = registerLine + i + 1;
+          break;
+        }
+      }
+      fileAndLine.push(`${filename}:${stepLine}`);
+      malformedKeywords.push(`${keyword} appears ${count} times`);
+      totalMalformedTests += count;
+    }
+    if (count === 0 && keyword !== "Given") {
+      fileAndLine.push(`${filename}:${registerLine}`);
+      malformedKeywords.push(`${keyword} appears zero times`);
+      totalMalformedTests += 1;
+    }
+  }
+  if (malformedKeywords.length > 0) {
+    malformedRegisters.push({
+      file_and_line: fileAndLine,
+      justification: malformedKeywords,
+      register: register
+    });
+  }
+  return totalMalformedTests;
+}
+
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /* ===============================================
@@ -476,6 +647,7 @@ app.post('/run-detection', upload.array('files'), (req, res) => {
   const duplicateScenarioTitles = findDuplicateScenarioTitles(fileNames, fileContents);
   const duplicateSteps = findDuplicateSteps(fileNames, fileContents);
   const duplicateTestCases = findDuplicateTestCases(fileNames, fileContents);
+  const malformedTests = findMalformedTests(fileNames, fileContents);
 
   res.json({
     untitledFeatures,
@@ -483,7 +655,8 @@ app.post('/run-detection', upload.array('files'), (req, res) => {
     absenceBackground,
     duplicateScenarioTitles,
     duplicateSteps,
-    duplicateTestCases
+    duplicateTestCases,
+    malformedTests
   });
 });
 
