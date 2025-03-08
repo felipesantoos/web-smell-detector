@@ -9,7 +9,7 @@ interface SmellCardProps {
 }
 
 export function SmellCard({ icon: Icon, title, count, children }: SmellCardProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div className={`bg-gray-50 rounded-lg shadow-md overflow-hidden h-fit ${isExpanded ? 'bg-white' : ''}`}>
