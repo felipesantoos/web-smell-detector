@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TestTube } from 'lucide-react';
 import { FileUpload } from '../components/FileUpload';
+import { Dashboard } from '../components/Dashboard';
 import {
   UntitledFeatures,
   DuplicateFeatures,
@@ -82,41 +83,44 @@ export function Analyzer() {
       />
 
       {results && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <UntitledFeatures items={results.untitledFeatures} />
-          <DuplicateFeatures
-            items={results.duplicateFeatureTitles.reportData}
-            totalFeatures={results.duplicateFeatureTitles.totalFeatures}
-          />
-          <AbsenceBackground
-            items={results.absenceBackground.absencesBackgrounds}
-            totalAbsenceBackgrounds={results.absenceBackground.totalAbsenceBackgrounds}
-          />
-          <DuplicateScenarios
-            items={results.duplicateScenarioTitles.duplicateScenarioTitles}
-            totalScenarioTitles={results.duplicateScenarioTitles.totalScenarioTitles}
-          />
-          <DuplicateSteps
-            items={results.duplicateSteps.duplicateSteps}
-            totalDuplicateSteps={results.duplicateSteps.totalDuplicateSteps}
-          />
-          <DuplicateTestCases
-            items={results.duplicateTestCases.duplicateTestCases}
-            totalTestCases={results.duplicateTestCases.totalTestCases}
-          />
-          <MalformedTests
-            items={results.malformedTests.malformedRegisters}
-            totalMalformedTests={results.malformedTests.totalMalformedTests}
-          />
-          <StartingWithLeftFoot
-            items={results.startingWithLeftFoot.leftFoots}
-            totalLeftFoots={results.startingWithLeftFoot.totalLeftFoots}
-          />
-          <ViciousTags
-            items={results.viciousTags.viciousTags}
-            totalViciousTags={results.viciousTags.totalViciousTags}
-          />
-        </div>
+        <>
+          <Dashboard results={results} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <UntitledFeatures items={results.untitledFeatures} />
+            <DuplicateFeatures
+              items={results.duplicateFeatureTitles.reportData}
+              totalFeatures={results.duplicateFeatureTitles.totalFeatures}
+            />
+            <AbsenceBackground
+              items={results.absenceBackground.absencesBackgrounds}
+              totalAbsenceBackgrounds={results.absenceBackground.totalAbsenceBackgrounds}
+            />
+            <DuplicateScenarios
+              items={results.duplicateScenarioTitles.duplicateScenarioTitles}
+              totalScenarioTitles={results.duplicateScenarioTitles.totalScenarioTitles}
+            />
+            <DuplicateSteps
+              items={results.duplicateSteps.duplicateSteps}
+              totalDuplicateSteps={results.duplicateSteps.totalDuplicateSteps}
+            />
+            <DuplicateTestCases
+              items={results.duplicateTestCases.duplicateTestCases}
+              totalTestCases={results.duplicateTestCases.totalTestCases}
+            />
+            <MalformedTests
+              items={results.malformedTests.malformedRegisters}
+              totalMalformedTests={results.malformedTests.totalMalformedTests}
+            />
+            <StartingWithLeftFoot
+              items={results.startingWithLeftFoot.leftFoots}
+              totalLeftFoots={results.startingWithLeftFoot.totalLeftFoots}
+            />
+            <ViciousTags
+              items={results.viciousTags.viciousTags}
+              totalViciousTags={results.viciousTags.totalViciousTags}
+            />
+          </div>
+        </>
       )}
     </div>
   );
