@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TestTube } from 'lucide-react';
+import { TestTube, FileText, AlertCircle, Info } from 'lucide-react';
 import { FileUpload } from '../components/FileUpload';
 import { Dashboard } from '../components/Dashboard';
 import {
@@ -67,11 +67,54 @@ export function Analyzer() {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-8">
-        <TestTube className="h-8 w-8 text-blue-600 flex-shrink-0" />
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-          Test Smells Analyzer
-        </h1>
+      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <TestTube className="h-8 w-8 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                Test Smells Analyzer
+              </h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">
+                Analyze your Gherkin/Cucumber feature files for potential test smells
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg">
+            <FileText className="h-5 w-5 text-blue-600 mt-0.5" />
+            <div>
+              <h3 className="font-medium text-blue-900">Feature Files</h3>
+              <p className="text-sm text-blue-700">
+                Upload your .feature files to analyze test quality and identify potential issues
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-lg">
+            <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+            <div>
+              <h3 className="font-medium text-amber-900">Smell Detection</h3>
+              <p className="text-sm text-amber-700">
+                Automatically detect common test smells and anti-patterns in your tests
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 p-4 bg-green-50 rounded-lg">
+            <Info className="h-5 w-5 text-green-600 mt-0.5" />
+            <div>
+              <h3 className="font-medium text-green-900">Detailed Analysis</h3>
+              <p className="text-sm text-green-700">
+                Get comprehensive insights and recommendations for improvement
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <FileUpload
