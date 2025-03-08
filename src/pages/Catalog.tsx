@@ -30,13 +30,13 @@ export function Catalog() {
           </p>
         </div>
 
-        <nav className="px-4 py-6 space-y-8">
+        <nav className="px-4 py-6">
           {testSmells.map((category, index) => (
-            <div key={index}>
-              <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
+            <div key={index} className="mb-6">
+              <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-2">
                 {category.category}
               </h2>
-              <ul className="space-y-2">
+              <ul className="space-y-1">
                 {category.items.map((smell, smellIndex) => (
                   <li key={smellIndex}>
                     <button
@@ -64,8 +64,8 @@ export function Catalog() {
       {currentSmell && (
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-8 py-6">
-            <div className="space-y-2 mb-6">
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className="mb-6">
+              <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
                 <span>{activeCategory}</span>
                 <ChevronRight className="h-4 w-4" />
                 <span>{currentSmell.title}</span>
@@ -77,13 +77,13 @@ export function Catalog() {
 
             <div className="prose prose-blue max-w-none">
               {/* Description */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+              <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Description</h2>
                 <p className="text-gray-600">{currentSmell.description}</p>
               </div>
 
               {/* Example */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+              <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Example</h2>
                 <div className="aspect-[16/9] bg-gray-50 rounded-lg overflow-hidden">
                   <img

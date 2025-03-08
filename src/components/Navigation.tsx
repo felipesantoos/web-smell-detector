@@ -4,7 +4,7 @@ import { TestTube, Book } from 'lucide-react';
 
 export function Navigation() {
   return (
-    <nav className="bg-white shadow-md">
+    <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-8">
