@@ -95,30 +95,30 @@ export function Dashboard({ results }: DashboardProps) {
   const totalSmells = metrics.reduce((acc, metric) => acc + metric.count, 0);
 
   return (
-    <div className="mb-8 space-y-6">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-6">
+    <div className="mb-6 sm:mb-8 space-y-4 sm:space-y-6">
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Smell Analysis Summary</h2>
-            <p className="text-gray-600">Total smells detected: {totalSmells}</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Smell Analysis Summary</h2>
+            <p className="text-sm sm:text-base text-gray-600">Total smells detected: {totalSmells}</p>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {metrics.map((metric, index) => (
             <div
               key={index}
-              className="bg-gray-50 rounded-lg p-4 flex items-center gap-4 transition-transform hover:scale-[1.02]"
+              className="bg-gray-50 rounded-lg p-3 sm:p-4 flex items-center gap-3 sm:gap-4 transition-transform hover:scale-[1.02]"
             >
-              <div className="p-3 rounded-lg" style={{ 
+              <div className="p-2 sm:p-3 rounded-lg" style={{ 
                 backgroundColor: metric.color.replace('rgb', 'rgba').replace(')', ', 0.1)'),
                 color: metric.color 
               }}>
-                <metric.icon className="h-6 w-6" />
+                <metric.icon className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
-                <div className="text-sm text-gray-600">{metric.name}</div>
-                <div className="text-2xl font-semibold text-gray-900">
+                <div className="text-xs sm:text-sm text-gray-600">{metric.name}</div>
+                <div className="text-xl sm:text-2xl font-semibold text-gray-900">
                   {metric.count}
                 </div>
               </div>

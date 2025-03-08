@@ -74,38 +74,68 @@ export function SmellsCharts({ metrics }: SmellsChartsProps) {
     ],
   };
 
-  const options = {
+  const commonOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'bottom' as const,
+        labels: {
+          boxWidth: 12,
+          padding: 15,
+          font: {
+            size: 11
+          }
+        }
       },
     },
+  };
+
+  const barAndLineOptions = {
+    ...commonOptions,
     scales: {
       y: {
         beginAtZero: true,
         ticks: {
           stepSize: 1,
-        },
+          font: {
+            size: 11
+          }
+        }
       },
+      x: {
+        ticks: {
+          font: {
+            size: 11
+          },
+          maxRotation: 45,
+          minRotation: 45
+        }
+      }
     },
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Distribution of Smells</h3>
-        <Pie data={pieData} options={{ plugins: { legend: { position: 'bottom' } } }} />
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Distribution of Smells</h3>
+        <div className="h-[300px] sm:h-[350px]">
+          <Pie data={pieData} options={commonOptions} />
+        </div>
       </div>
       
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Smell Counts</h3>
-        <Bar data={barData} options={options} />
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Smell Counts</h3>
+        <div className="h-[300px] sm:h-[350px]">
+          <Bar data={barData} options={barAndLineOptions} />
+        </div>
       </div>
       
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Smell Trends</h3>
-        <Line data={lineData} options={options} />
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Smell Trends</h3>
+        <div className="h-[300px] sm:h-[350px]">
+          <Line data={lineData} options={barAndLineOptions} />
+        </div>
       </div>
     </div>
   );

@@ -66,10 +66,10 @@ export function Analyzer() {
   };
 
   return (
-    <div>
-      <div className="flex items-center gap-3 mb-8">
-        <TestTube className="h-8 w-8 text-blue-600" />
-        <h1 className="text-3xl font-bold text-gray-900">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-8">
+        <TestTube className="h-8 w-8 text-blue-600 flex-shrink-0" />
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
           Test Smells Analyzer
         </h1>
       </div>
@@ -85,7 +85,7 @@ export function Analyzer() {
       {results && (
         <>
           <Dashboard results={results} />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <UntitledFeatures items={results.untitledFeatures} />
             <DuplicateFeatures
               items={results.duplicateFeatureTitles.reportData}
