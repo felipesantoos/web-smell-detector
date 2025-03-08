@@ -96,7 +96,6 @@ function findDuplicateFeatureTitlesAdvanced(filenames, fileContents) {
 /* ===============================================
    Additional Detector: Absence of Background
    =============================================== */
-
 /**
  * Helper function to mimic Python's match_structure.
  */
@@ -175,13 +174,7 @@ function absenceAnalysis(filename, registers, stepPattern, partitionPattern, abs
     });
   });
   const absenceCounts = absenceCounter(stepsScenariosFeature);
-  totalAbsenceBackgrounds = absenceStructure(
-    filename,
-    absenceCounts,
-    absencesBackgrounds,
-    totalScenarios,
-    totalAbsenceBackgrounds
-  );
+  totalAbsenceBackgrounds = absenceStructure(filename, absenceCounts, absencesBackgrounds, totalScenarios, totalAbsenceBackgrounds);
   return totalAbsenceBackgrounds;
 }
 
@@ -295,9 +288,132 @@ function findDuplicateScenarioTitles(filenames, fileContents) {
   return { totalScenarioTitles, duplicateScenarioTitles };
 }
 
-/* =====================================================
+/* ===============================================
+   Detector: Find Duplicate Steps
+   =============================================== */
+/**
+ * Finds duplicate steps within each feature file.
+ *
+ * @param {string[]} featureFilenames - Array of feature file names.
+ * @param {string[]} featureFiles - Array of feature file contents.
+ * @returns {Object} An object with totalDuplicateSteps and an array of duplicate steps details.
+ */
+function findDuplicateSteps(featureFilenames, featureFiles) {
+  const backgroundPattern = /(Background:.*)([\s\S]*?)(?=(?:([@#][\s\S]*?)?Scenario:)|(?:([@#][\s\S]*?)?Scenario Outline:)|(?:([@#][\s\S]*?)?Example:)|(?:([@#][\s\S]*?)?Rule:)|$)/g;
+  const scenarioPattern = /(Scenario:.*)([\s\S]*?)(?=(?:([@#][\s\S]*?)?Scenario:)|(?:([@#][\s\S]*?)?Scenario Outline:)|(?:([@#][\s\S]*?)?Example:)|(?:([@#][\s\S]*?)?Rule:)|$)/g;
+  const scenarioOutlinePattern = /(Scenario Outline:.*)([\s\S]*?)(?=(?:([@#][\s\S]*?)?Scenario:)|(?:([@#][\s\S]*?)?Scenario Outline:)|(?:([@#][\s\S]*?)?Example:)|(?:([@#][\s\S]*?)?Rule:)|$)/g;
+  const examplePattern = /(Example:.*)([\s\S]*?)(?=(?:([@#][\s\S]*?)?Scenario:)|(?:([@#][\s\S]*?)?Scenario Outline:)|(?:([@#][\s\S]*?)?Example:)|(?:([@#][\s\S]*?)?Rule:)|$)/g;
+  const stepPattern = /(?:Given|When|Then|And|But)([\s\S]*?)(?=Given|When|Then|And|But|Scenario:|Scenario Outline:|Example:|Examples:|Rule:|$)/g;
+  
+  let duplicateSteps = [];
+  let totalDuplicateSteps = 0;
+  
+  for (let i = 0; i < featureFilenames.length; i++) {
+    const filename = featureFilenames[i];
+    const featureFile = featureFiles[i];
+    // Find registers: backgrounds, scenarios, scenario outlines, and examples.
+    let registers = [];
+    
+    function getMatches(pattern) {
+      pattern.lastIndex = 0;
+      let match;
+      while ((match = pattern.exec(featureFile)) !== null) {
+        // Compute line number: count newlines before the match.
+        const lineNumber = featureFile.slice(0, match.index).split('\n').length;
+        registers.push({ register: match[0].trim(), lineNumber });
+      }
+    }
+    getMatches(backgroundPattern);
+    getMatches(scenarioPattern);
+    getMatches(scenarioOutlinePattern);
+    getMatches(examplePattern);
+    
+    totalDuplicateSteps = stutteringAnalysis(filename, registers, stepPattern, duplicateSteps, totalDuplicateSteps);
+  }
+  
+  if (duplicateSteps.length > 0) {
+    duplicateSteps.forEach(ds => {
+      ds.file_and_line = ds.file_and_line.join('\n');
+      ds.duplicate_step = ds.duplicate_step.join('\n');
+    });
+  }
+  
+  return { totalDuplicateSteps, duplicateSteps };
+}
+
+/**
+ * Helper function: stutteringAnalysis
+ */
+function stutteringAnalysis(filename, registers, stepPattern, duplicateSteps, totalDuplicateSteps) {
+  const originalRegisters = registers.map(r => r.register);
+  for (let i = 0; i < registers.length; i++) {
+    registers[i].register = registers[i].register.replace(/\n\n/g, "\n").trim();
+    stepPattern.lastIndex = 0;
+    let steps = [];
+    let match;
+    while ((match = stepPattern.exec(registers[i].register)) !== null) {
+      steps.push(match[1].trim());
+    }
+    const stutteringCounts = stutteringCounter(steps);
+    totalDuplicateSteps = duplicateStepsStructure(
+      filename,
+      registers[i].lineNumber,
+      stutteringCounts,
+      originalRegisters[i],
+      duplicateSteps,
+      totalDuplicateSteps
+    );
+  }
+  return totalDuplicateSteps;
+}
+
+/**
+ * Helper function: stutteringCounter
+ */
+function stutteringCounter(steps) {
+  const stepCounts = {};
+  steps.forEach(step => {
+    step = step.trim();
+    stepCounts[step] = (stepCounts[step] || 0) + 1;
+  });
+  return stepCounts;
+}
+
+/**
+ * Helper function: duplicateStepsStructure
+ */
+function duplicateStepsStructure(filename, registerLine, stutteringCounts, register, duplicateSteps, totalDuplicateSteps) {
+  let duplicateStepArr = [];
+  let fileAndLineArr = [];
+  for (const step in stutteringCounts) {
+    const count = stutteringCounts[step];
+    if (count > 1) {
+      let stepLine = 0;
+      const lines = register.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].search(new RegExp(step, 'g')) !== -1) {
+          stepLine = registerLine + i;
+          break;
+        }
+      }
+      fileAndLineArr.push(`${filename}:${stepLine}`);
+      duplicateStepArr.push(`'${step}' appears ${count} times`);
+      totalDuplicateSteps += count;
+    }
+  }
+  if (duplicateStepArr.length > 0) {
+    duplicateSteps.push({
+      file_and_line: fileAndLineArr,
+      duplicate_step: duplicateStepArr,
+      register: register
+    });
+  }
+  return totalDuplicateSteps;
+}
+
+/* ===============================================
    Single Endpoint: Run All Smell Detections
-   ===================================================== */
+   =============================================== */
 
 app.post('/run-detection', upload.array('files'), (req, res) => {
   if (!req.files || req.files.length === 0) {
@@ -310,12 +426,14 @@ app.post('/run-detection', upload.array('files'), (req, res) => {
   const duplicateFeatureTitles = findDuplicateFeatureTitlesAdvanced(fileNames, fileContents);
   const absenceBackground = findAbsenceBackground(fileNames, fileContents);
   const duplicateScenarioTitles = findDuplicateScenarioTitles(fileNames, fileContents);
+  const duplicateSteps = findDuplicateSteps(fileNames, fileContents);
 
   res.json({
     untitledFeatures,
     duplicateFeatureTitles,
     absenceBackground,
-    duplicateScenarioTitles
+    duplicateScenarioTitles,
+    duplicateSteps
   });
 });
 
