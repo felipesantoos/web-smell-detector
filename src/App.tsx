@@ -9,15 +9,17 @@ function App() {
     <BrowserRouter>
       <div className="min-h-screen bg-gray-100">
         <Navigation />
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <Routes>
-            <Route path="/" element={<Analyzer />} />
-            <Route path="/catalog" element={<Catalog />} />
-          </Routes>
-        </div>
+        <Routes>
+          <Route path="/" element={
+            <div className="max-w-7xl mx-auto px-4 py-8">
+              <Analyzer />
+            </div>
+          } />
+          <Route path="/catalog" element={<Catalog />} />
+        </Routes>
       </div>
     </BrowserRouter>
   );
 }
 
-export default App
+export default App;
