@@ -75,28 +75,16 @@ export function Catalog() {
               </h1>
             </div>
 
-            <div className="prose prose-blue max-w-none">
+            <div className="prose prose-blue max-w-none space-y-4">
               {/* Description */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Description</h2>
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Description</h2>
                 <p className="text-gray-600">{currentSmell.description}</p>
-              </div>
-
-              {/* Example */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Example</h2>
-                <div className="aspect-[16/9] bg-gray-50 rounded-lg overflow-hidden">
-                  <img
-                    src={currentSmell.image}
-                    alt={`Example of ${currentSmell.title}`}
-                    className="w-full h-full object-contain"
-                  />
-                </div>
               </div>
 
               {/* Consequences */}
               <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Consequences</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Consequences</h2>
                 <ul className="space-y-3">
                   {currentSmell.consequences.map((consequence, index) => (
                     <li key={index} className="flex items-start gap-3">
@@ -105,6 +93,18 @@ export function Catalog() {
                     </li>
                   ))}
                 </ul>
+              </div>
+
+              {/* Example */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Example</h2>
+                <div className="aspect-[16/9] bg-gray-50 rounded-lg overflow-hidden">
+                  <img
+                    src={currentSmell.image}
+                    alt={`Example of ${currentSmell.title}`}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
               </div>
             </div>
           </div>
