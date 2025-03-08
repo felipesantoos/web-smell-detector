@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Upload, AlertCircle, FileText } from 'lucide-react';
+import { Upload, AlertCircle, FileText, AlertTriangle, Copy, Tag, Footprints, TestTube, Repeat, Layout } from 'lucide-react';
 
 interface SmellResult {
   filename: string;
-  line?: number;
+  lineNumber?: number;
+  matchedLine?: string;
   file_and_line?: string;
   count?: number;
+  feature?: string;
+  filenames?: string;
   titlesAndFiles?: string;
   testCaseBody?: string;
   duplicate_step?: string;
@@ -16,6 +19,8 @@ interface SmellResult {
   left_foot?: string;
   justification?: string;
   absence_background?: string;
+  title?: string;
+  locations?: string[];
 }
 
 interface AnalysisResult {
@@ -53,6 +58,47 @@ interface AnalysisResult {
     totalViciousTags: number;
     viciousTags: SmellResult[];
   };
+}
+
+function SmellCard({ icon: Icon, title, count, children }: {
+  icon: React.ElementType;
+  title: string;
+  count: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="border-b border-gray-200 bg-gray-50 px-4 py-3 flex items-center gap-2">
+        <Icon className="h-5 w-5 text-gray-500" />
+        <h3 className="text-lg font-semibold text-gray-900">
+          {title}
+        </h3>
+        <span className="ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          {count}
+        </span>
+      </div>
+      <div className="p-4">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function FileLocation({ location }: { location: string }) {
+  return (
+    <div className="flex items-center gap-2 text-sm text-gray-600">
+      <FileText className="h-4 w-4" />
+      <span className="font-mono">{location}</span>
+    </div>
+  );
+}
+
+function CodeBlock({ code }: { code: string }) {
+  return (
+    <pre className="mt-2 p-3 bg-gray-50 rounded-md font-mono text-sm overflow-x-auto">
+      {code}
+    </pre>
+  );
 }
 
 function App() {
@@ -105,63 +151,19 @@ function App() {
     }
   };
 
-  const renderSmellSection = (title: string, items: SmellResult[], total: number) => {
-    if (!items || items.length === 0) return null;
-
-    return (
-      <div className="mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          {title} ({total})
-        </h3>
-        <div className="space-y-4">
-          {items.map((item, index) => (
-            <div key={index} className="bg-white rounded-lg shadow p-4">
-              {item.filename && (
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                  <FileText className="h-4 w-4" />
-                  <span>{item.filename}</span>
-                </div>
-              )}
-              {item.file_and_line && (
-                <pre className="text-sm bg-gray-50 p-2 rounded mb-2">{item.file_and_line}</pre>
-              )}
-              {item.duplicate_step && (
-                <div className="text-sm text-gray-700 mb-2">{item.duplicate_step}</div>
-              )}
-              {item.vicious_tag && (
-                <div className="text-sm text-gray-700 mb-2">{item.vicious_tag}</div>
-              )}
-              {item.left_foot && (
-                <pre className="text-sm bg-gray-50 p-2 rounded mb-2">{item.left_foot}</pre>
-              )}
-              {item.justification && (
-                <div className="text-sm text-gray-700">{item.justification}</div>
-              )}
-              {item.absence_background && (
-                <div className="text-sm text-gray-700">{item.absence_background}</div>
-              )}
-              {item.register && (
-                <pre className="text-sm bg-gray-50 p-2 rounded mt-2 overflow-x-auto">
-                  {item.register}
-                </pre>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto p-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          Analisador de Test Smells
-        </h1>
+    <div className="min-h-screen bg-gray-100">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex items-center gap-3 mb-8">
+          <TestTube className="h-8 w-8 text-blue-600" />
+          <h1 className="text-3xl font-bold text-gray-900">
+            Analisador de Test Smells
+          </h1>
+        </div>
 
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
               <input
                 type="file"
                 onChange={handleFileChange}
@@ -178,13 +180,16 @@ function App() {
                 <span className="text-sm text-gray-600">
                   {files ? `${files.length} arquivo(s) selecionado(s)` : 'Selecione arquivos .feature'}
                 </span>
+                <p className="mt-1 text-xs text-gray-500">
+                  Arraste e solte ou clique para selecionar
+                </p>
               </label>
             </div>
 
             <button
               type="submit"
               disabled={!files || loading}
-              className={`w-full py-2 px-4 rounded-md text-white font-medium ${
+              className={`w-full py-3 px-4 rounded-md text-white font-medium transition ${
                 !files || loading
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700'
@@ -203,16 +208,192 @@ function App() {
         </div>
 
         {results && (
-          <div className="space-y-8">
-            {renderSmellSection('Features sem Título', results.untitledFeatures, results.untitledFeatures.length)}
-            {renderSmellSection('Títulos de Feature Duplicados', results.duplicateFeatureTitles.reportData, results.duplicateFeatureTitles.totalFeatures)}
-            {renderSmellSection('Ausência de Background', results.absenceBackground.absencesBackgrounds, results.absenceBackground.totalAbsenceBackgrounds)}
-            {renderSmellSection('Títulos de Cenário Duplicados', results.duplicateScenarioTitles.duplicateScenarioTitles, results.duplicateScenarioTitles.totalScenarioTitles)}
-            {renderSmellSection('Steps Duplicados', results.duplicateSteps.duplicateSteps, results.duplicateSteps.totalDuplicateSteps)}
-            {renderSmellSection('Casos de Teste Duplicados', results.duplicateTestCases.duplicateTestCases, results.duplicateTestCases.totalTestCases)}
-            {renderSmellSection('Testes Malformados', results.malformedTests.malformedRegisters, results.malformedTests.totalMalformedTests)}
-            {renderSmellSection('Iniciando com o Pé Esquerdo', results.startingWithLeftFoot.leftFoots, results.startingWithLeftFoot.totalLeftFoots)}
-            {renderSmellSection('Tags Viciosas', results.viciousTags.viciousTags, results.viciousTags.totalViciousTags)}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Untitled Features */}
+            {results.untitledFeatures.length > 0 && (
+              <SmellCard
+                icon={Layout}
+                title="Features sem Título"
+                count={results.untitledFeatures.length}
+              >
+                <div className="space-y-4">
+                  {results.untitledFeatures.map((item, index) => (
+                    <div key={index} className="space-y-2">
+                      <FileLocation location={`${item.filename}:${item.lineNumber}`} />
+                      <div className="text-sm text-red-600">
+                        Feature declarada sem título: <code>{item.matchedLine}</code>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SmellCard>
+            )}
+
+            {/* Duplicate Feature Titles */}
+            {results.duplicateFeatureTitles.reportData.length > 0 && (
+              <SmellCard
+                icon={Copy}
+                title="Títulos de Feature Duplicados"
+                count={results.duplicateFeatureTitles.totalFeatures}
+              >
+                <div className="space-y-4">
+                  {results.duplicateFeatureTitles.reportData.map((item, index) => (
+                    <div key={index} className="space-y-2">
+                      <div className="font-medium text-gray-700">{item.feature}</div>
+                      <div className="text-sm text-gray-500">
+                        Encontrado {item.count} vezes em:
+                      </div>
+                      <CodeBlock code={item.filenames || ''} />
+                    </div>
+                  ))}
+                </div>
+              </SmellCard>
+            )}
+
+            {/* Absence of Background */}
+            {results.absenceBackground.absencesBackgrounds.length > 0 && (
+              <SmellCard
+                icon={AlertTriangle}
+                title="Ausência de Background"
+                count={results.absenceBackground.totalAbsenceBackgrounds}
+              >
+                <div className="space-y-4">
+                  {results.absenceBackground.absencesBackgrounds.map((item, index) => (
+                    <div key={index} className="space-y-2">
+                      <FileLocation location={item.filename} />
+                      <div className="text-sm text-gray-700">
+                        Steps repetidos em {item.scenarios} cenários:
+                      </div>
+                      <CodeBlock code={item.absence_background || ''} />
+                    </div>
+                  ))}
+                </div>
+              </SmellCard>
+            )}
+
+            {/* Duplicate Scenario Titles */}
+            {results.duplicateScenarioTitles.duplicateScenarioTitles.length > 0 && (
+              <SmellCard
+                icon={Copy}
+                title="Títulos de Cenário Duplicados"
+                count={results.duplicateScenarioTitles.totalScenarioTitles}
+              >
+                <div className="space-y-4">
+                  {results.duplicateScenarioTitles.duplicateScenarioTitles.map((item, index) => (
+                    <div key={index} className="space-y-2">
+                      <div className="font-medium text-gray-700">{item.title}</div>
+                      <div className="text-sm text-gray-500">
+                        Encontrado {item.count} vezes em:
+                      </div>
+                      {item.locations?.map((location, i) => (
+                        <FileLocation key={i} location={location} />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </SmellCard>
+            )}
+
+            {/* Duplicate Steps */}
+            {results.duplicateSteps.duplicateSteps.length > 0 && (
+              <SmellCard
+                icon={Repeat}
+                title="Steps Duplicados"
+                count={results.duplicateSteps.totalDuplicateSteps}
+              >
+                <div className="space-y-4">
+                  {results.duplicateSteps.duplicateSteps.map((item, index) => (
+                    <div key={index} className="space-y-2">
+                      <FileLocation location={item.file_and_line || ''} />
+                      <div className="text-sm text-gray-700">{item.duplicate_step}</div>
+                      <CodeBlock code={item.register || ''} />
+                    </div>
+                  ))}
+                </div>
+              </SmellCard>
+            )}
+
+            {/* Duplicate Test Cases */}
+            {results.duplicateTestCases.duplicateTestCases.length > 0 && (
+              <SmellCard
+                icon={Copy}
+                title="Casos de Teste Duplicados"
+                count={results.duplicateTestCases.totalTestCases}
+              >
+                <div className="space-y-4">
+                  {results.duplicateTestCases.duplicateTestCases.map((item, index) => (
+                    <div key={index} className="space-y-2">
+                      <div className="text-sm text-gray-500">
+                        Encontrado {item.count} vezes em:
+                      </div>
+                      <CodeBlock code={item.titlesAndFiles || ''} />
+                      <div className="text-sm text-gray-700 mt-2">Conteúdo duplicado:</div>
+                      <CodeBlock code={item.testCaseBody || ''} />
+                    </div>
+                  ))}
+                </div>
+              </SmellCard>
+            )}
+
+            {/* Malformed Tests */}
+            {results.malformedTests.malformedRegisters.length > 0 && (
+              <SmellCard
+                icon={AlertTriangle}
+                title="Testes Malformados"
+                count={results.malformedTests.totalMalformedTests}
+              >
+                <div className="space-y-4">
+                  {results.malformedTests.malformedRegisters.map((item, index) => (
+                    <div key={index} className="space-y-2">
+                      <FileLocation location={item.file_and_line || ''} />
+                      <div className="text-sm text-red-600">{item.justification}</div>
+                      <CodeBlock code={item.register || ''} />
+                    </div>
+                  ))}
+                </div>
+              </SmellCard>
+            )}
+
+            {/* Starting with Left Foot */}
+            {results.startingWithLeftFoot.leftFoots.length > 0 && (
+              <SmellCard
+                icon={Footprints}
+                title="Iniciando com o Pé Esquerdo"
+                count={results.startingWithLeftFoot.totalLeftFoots}
+              >
+                <div className="space-y-4">
+                  {results.startingWithLeftFoot.leftFoots.map((item, index) => (
+                    <div key={index} className="space-y-2">
+                      <FileLocation location={item.filename} />
+                      <CodeBlock code={item.left_foot || ''} />
+                    </div>
+                  ))}
+                </div>
+              </SmellCard>
+            )}
+
+            {/* Vicious Tags */}
+            {results.viciousTags.viciousTags.length > 0 && (
+              <SmellCard
+                icon={Tag}
+                title="Tags Viciosas"
+                count={results.viciousTags.totalViciousTags}
+              >
+                <div className="space-y-4">
+                  {results.viciousTags.viciousTags.map((item, index) => (
+                    <div key={index} className="space-y-2">
+                      <FileLocation location={item.filename} />
+                      <div className="text-sm text-gray-700">
+                        {item.vicious_tag}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        Em {item.scenarios} {item.type?.toLowerCase()}s
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SmellCard>
+            )}
           </div>
         )}
       </div>
