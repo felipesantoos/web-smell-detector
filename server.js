@@ -28,22 +28,19 @@ function readFilesFromUpload(files) {
  * @returns {Array} Array of result objects with filename, lineNumber, and matchedLine.
  */
 function findUntitledFeatures(filenames, fileContents) {
-  // Regular expression: "Feature:" followed only by whitespace until end-of-line
   const pattern = /^Feature:\s*$/;
   const results = [];
-
   filenames.forEach((filename, idx) => {
     const lines = fileContents[idx].split('\n');
     for (let i = 0; i < lines.length; i++) {
       if (pattern.test(lines[i])) {
-        // Mimic Python's lstrip() by removing only leading whitespace
         const matchedLine = lines[i].replace(/^\s+/, '');
         results.push({
           filename,
           lineNumber: i + 1,
           matchedLine
         });
-        break; // stop after the first match per file
+        break;
       }
     }
   });
@@ -52,29 +49,16 @@ function findUntitledFeatures(filenames, fileContents) {
 
 /**
  * Detector: Find Duplicate Feature Titles (Advanced)
- * This function extracts the first line starting with "Feature:" from each file,
- * groups them by title, counts the occurrences, and returns overall totals along
- * with a report of duplicate features.
- *
- * The returned object has the following structure:
- * {
- *   totalFeatures: <number>,
- *   totalDistinctFeatures: <number>,
- *   reportData: [
- *     { feature: <string>, count: <number>, filenames: <string> },
- *     ...
- *   ]
- * }
+ * Extracts the first line starting with "Feature:" from each file, groups them by title,
+ * counts occurrences, and returns overall totals along with a duplicate report.
  *
  * @param {string[]} filenames - Array of feature file names.
  * @param {string[]} fileContents - Array of feature file contents.
- * @returns {Object} The analysis result.
+ * @returns {Object} Analysis result with totalFeatures, totalDistinctFeatures, and reportData.
  */
 function findDuplicateFeatureTitlesAdvanced(filenames, fileContents) {
-  // Pattern to extract feature line (using MULTILINE mode)
   const pattern = /Feature:.*$/m;
   const features = [];
-
   filenames.forEach((filename, idx) => {
     const file = fileContents[idx];
     const match = file.match(pattern);
@@ -82,7 +66,6 @@ function findDuplicateFeatureTitlesAdvanced(filenames, fileContents) {
       features.push({ feature: match[0].trim(), filename });
     }
   });
-
   const totalFeatures = features.length;
   const distinctFeatures = {};
   features.forEach(({ feature, filename }) => {
@@ -105,40 +88,181 @@ function findDuplicateFeatureTitlesAdvanced(filenames, fileContents) {
       });
     }
   });
-  // Sort reportData by feature name
   reportData.sort((a, b) => a.feature.localeCompare(b.feature));
   return { totalFeatures, totalDistinctFeatures, reportData };
 }
 
-/* 
-  ============
-  Additional detectors (for duplicate steps, duplicate scenario titles,
-  absence of background, etc.) can be implemented in a similar fashion,
-  using regular expressions and file/string processing.
-  ============
-*/
+/* =====================================================
+   Additional Detector: Absence of Background
+   ===================================================== */
 
-// POST endpoint to run detection on uploaded .feature files
+/**
+ * Helper function to mimic Python's match_structure.
+ */
+function matchStructure(line, totalList, pattern) {
+  const match = line.match(pattern);
+  if (match) {
+    const titleName = match[2] || "";
+    const normalizedTitle = titleName.trim();
+    totalList.push(normalizedTitle);
+  }
+}
+
+/**
+ * Helper function: absenceCounter
+ */
+function absenceCounter(stepsScenariosFeature) {
+  let biggestScenario = [];
+  stepsScenariosFeature.forEach(scenario => {
+    if (scenario.length > biggestScenario.length) {
+      biggestScenario = scenario;
+    }
+  });
+  const stepCounts = {};
+  for (let size = biggestScenario.length; size > 0; size--) {
+    for (let key in stepCounts) {
+      delete stepCounts[key];
+    }
+    stepsScenariosFeature.forEach(stepsScenario => {
+      const key = stepsScenario.slice(0, size).join('|');
+      stepCounts[key] = (stepCounts[key] || 0) + 1;
+    });
+    const counts = Object.values(stepCounts);
+    const maxCount = counts.length ? Math.max(...counts) : 0;
+    if (maxCount >= stepsScenariosFeature.length) {
+      return stepCounts;
+    }
+  }
+  return stepCounts;
+}
+
+/**
+ * Helper function: absenceStructure
+ */
+function absenceStructure(filename, absenceCounts, absencesBackgrounds, totalScenarios, totalAbsenceBackgrounds) {
+  let absenceBackground = [];
+  Object.entries(absenceCounts).forEach(([key, count]) => {
+    if (count >= totalScenarios && totalScenarios > 1) {
+      const formattedStep = key.split('|').map(s => s.trim()).join('\n ');
+      absenceBackground.push(`'${formattedStep}' appears ${count} times`);
+      totalAbsenceBackgrounds += count;
+    }
+  });
+  if (absenceBackground.length > 0) {
+    absencesBackgrounds.push({
+      filename,
+      absence_background: absenceBackground,
+      scenarios: totalScenarios
+    });
+  }
+  return totalAbsenceBackgrounds;
+}
+
+/**
+ * Helper function: absenceAnalysis
+ */
+function absenceAnalysis(filename, registers, stepPattern, partitionPattern, absencesBackgrounds, totalScenarios, totalAbsenceBackgrounds) {
+  let stepsScenariosFeature = [];
+  registers = registers.map(reg => reg.replace(/\n\n/g, "\n"));
+  registers.forEach(reg => {
+    const trimmed = reg.trim();
+    let untreatedStepsScenarios = trimmed.match(stepPattern) || [];
+    untreatedStepsScenarios.forEach(uts => {
+      const utsTrimmed = uts.trim();
+      let stepsScenario = utsTrimmed.split(partitionPattern).map(s => s.trim()).filter(s => s);
+      stepsScenariosFeature.push(stepsScenario);
+    });
+  });
+  const absenceCounts = absenceCounter(stepsScenariosFeature);
+  totalAbsenceBackgrounds = absenceStructure(filename, absenceCounts, absencesBackgrounds, totalScenarios, totalAbsenceBackgrounds);
+  return totalAbsenceBackgrounds;
+}
+
+/**
+ * Detector: Find Absence of Background
+ * Mimics the Python function to detect scenarios where background is absent.
+ *
+ * @param {string[]} featureFilenames - Array of feature file names.
+ * @param {string[]} featureFiles - Array of feature file contents.
+ * @returns {Object} An object with totalAbsenceBackgrounds and an array of detailed records.
+ */
+function findAbsenceBackground(featureFilenames, featureFiles) {
+  let totalScenarios = [];
+  let absencesBackgrounds = [];
+  let totalAbsenceBackgrounds = 0;
+  
+  // Define regex patterns
+  const scenarioPattern = /(Scenario:[\s\S]*?)(?=(?:([@#]\S*?)?Scenario:)|(?:([@#]\S*?)?Scenario Outline:)|(?:([@#]\S*?)?Example:)|(?:([@#]\S*?)?Rule:)|$)/g;
+  const scenarioOutlinePattern = /(Scenario Outline:[\s\S]*?)(?=(?:([@#]\S*?)?Scenario:)|(?:([@#]\S*?)?Scenario Outline:)|(?:([@#]\S*?)?Example:)|(?:([@#]\S*?)?Rule:)|$)/g;
+  const examplePattern = /(Example:[\s\S]*?)(?=(?:([@#]\S*?)?Scenario:)|(?:([@#]\S*?)?Scenario Outline:)|(?:([@#]\S*?)?Example:)|(?:([@#]\S*?)?Rule:)|$)/g;
+  const stepPattern = /(?:Scenario:|Scenario Outline:|Example:)[\s\S]*?(?:(Given[\s\S]*?|And[\s\S]*?))(?=When|Then|Scenario:|Scenario Outline:|Example:|Examples:|Rule:|$)/g;
+  const partitionPattern = /(?:Given\s|And\s|But\s)/g;
+  const totalScenarioPattern = /^\s*(Scenario:|Example:|Scenario Outline:)\s*(.+)$/;
+  
+  for (let i = 0; i < featureFiles.length; i++) {
+    const filename = featureFilenames[i];
+    const fileContent = featureFiles[i];
+    const lines = fileContent.split('\n');
+    for (let j = 0; j < lines.length; j++) {
+      matchStructure(lines[j], totalScenarios, totalScenarioPattern);
+    }
+    let scenarios = [];
+    let match;
+    while ((match = scenarioPattern.exec(fileContent)) !== null) {
+      scenarios.push(match[1].trim());
+    }
+    let scenarioOutlines = [];
+    while ((match = scenarioOutlinePattern.exec(fileContent)) !== null) {
+      scenarioOutlines.push(match[1].trim());
+    }
+    let examples = [];
+    while ((match = examplePattern.exec(fileContent)) !== null) {
+      examples.push(match[1].trim());
+    }
+    const totalScenariosFeature = scenarios.concat(scenarioOutlines, examples);
+    totalAbsenceBackgrounds = absenceAnalysis(
+      filename,
+      totalScenariosFeature,
+      stepPattern,
+      partitionPattern,
+      absencesBackgrounds,
+      totalScenarios.length,
+      totalAbsenceBackgrounds
+    );
+    totalScenarios = [];
+  }
+  
+  if (absencesBackgrounds.length > 0) {
+    absencesBackgrounds.forEach(register => {
+      register.absence_background = register.absence_background.join('\n');
+    });
+  }
+  
+  return {
+    totalAbsenceBackgrounds,
+    absencesBackgrounds
+  };
+}
+
+/* =====================================================
+   Single Endpoint: Run All Smell Detections
+   ===================================================== */
+
 app.post('/run-detection', upload.array('files'), (req, res) => {
-  // req.files is an array of uploaded files
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ error: "No files were uploaded." });
   }
-
-  // Extract file names and contents
   const fileNames = req.files.map(file => file.originalname);
   const fileContents = readFilesFromUpload(req.files);
 
-  // Run detectors on the uploaded files
   const untitledFeatures = findUntitledFeatures(fileNames, fileContents);
   const duplicateFeatureTitles = findDuplicateFeatureTitlesAdvanced(fileNames, fileContents);
-  // Additional detectors would be called here…
+  const absenceBackground = findAbsenceBackground(fileNames, fileContents);
 
-  // Send JSON response with results
   res.json({
     untitledFeatures,
-    duplicateFeatureTitles
-    // ... include other detectors’ results here as needed
+    duplicateFeatureTitles,
+    absenceBackground
   });
 });
 
@@ -149,7 +273,7 @@ app.get('/', (req, res) => {
     <form method="POST" action="/run-detection" enctype="multipart/form-data">
       <label for="files">Upload .feature files:</label>
       <input type="file" name="files" id="files" multiple accept=".feature">
-      <button type="submit">Run Detection</button>
+      <button type="submit">Run All Detections</button>
     </form>
   `);
 });
