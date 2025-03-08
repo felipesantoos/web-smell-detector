@@ -12,7 +12,7 @@ export function SmellCard({ icon: Icon, title, count, children }: SmellCardProps
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    <div className={`bg-gray-50 rounded-lg shadow-md overflow-hidden h-fit ${isExpanded ? 'bg-white' : ''}`}>
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full border-b border-gray-200 bg-gray-50 px-4 py-3 flex items-center gap-2 hover:bg-gray-100 transition-colors"
@@ -31,7 +31,7 @@ export function SmellCard({ icon: Icon, title, count, children }: SmellCardProps
         )}
       </button>
       {isExpanded && (
-        <div className="p-4">
+        <div className="p-4 bg-white">
           {children}
         </div>
       )}
