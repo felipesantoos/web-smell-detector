@@ -113,7 +113,7 @@ function App() {
       setFiles(selectedFiles);
       setError(null);
     } else {
-      setError('Por favor, selecione apenas arquivos .feature');
+      setError('Please select only .feature files');
       setFiles(null);
     }
   };
@@ -139,12 +139,12 @@ function App() {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao analisar arquivos');
+        throw new Error(data.error || 'Error analyzing files');
       }
 
       setResults(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao analisar arquivos');
+      setError(err instanceof Error ? err.message : 'Error analyzing files');
       setResults(null);
     } finally {
       setLoading(false);
@@ -157,7 +157,7 @@ function App() {
         <div className="flex items-center gap-3 mb-8">
           <TestTube className="h-8 w-8 text-blue-600" />
           <h1 className="text-3xl font-bold text-gray-900">
-            Analisador de Test Smells
+            Test Smells Analyzer
           </h1>
         </div>
 
@@ -178,10 +178,10 @@ function App() {
               >
                 <Upload className="h-12 w-12 text-gray-400 mb-3" />
                 <span className="text-sm text-gray-600">
-                  {files ? `${files.length} arquivo(s) selecionado(s)` : 'Selecione arquivos .feature'}
+                  {files ? `${files.length} file(s) selected` : 'Select .feature files'}
                 </span>
                 <p className="mt-1 text-xs text-gray-500">
-                  Arraste e solte ou clique para selecionar
+                  Drag and drop or click to select
                 </p>
               </label>
             </div>
@@ -195,7 +195,7 @@ function App() {
                   : 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
-              {loading ? 'Analisando...' : 'Analisar Arquivos'}
+              {loading ? 'Analyzing...' : 'Analyze Files'}
             </button>
           </form>
 
@@ -213,7 +213,7 @@ function App() {
             {results.untitledFeatures.length > 0 && (
               <SmellCard
                 icon={Layout}
-                title="Features sem Título"
+                title="Untitled Features"
                 count={results.untitledFeatures.length}
               >
                 <div className="space-y-4">
@@ -221,7 +221,7 @@ function App() {
                     <div key={index} className="space-y-2">
                       <FileLocation location={`${item.filename}:${item.lineNumber}`} />
                       <div className="text-sm text-red-600">
-                        Feature declarada sem título: <code>{item.matchedLine}</code>
+                        Feature declared without title: <code>{item.matchedLine}</code>
                       </div>
                     </div>
                   ))}
@@ -233,7 +233,7 @@ function App() {
             {results.duplicateFeatureTitles.reportData.length > 0 && (
               <SmellCard
                 icon={Copy}
-                title="Títulos de Feature Duplicados"
+                title="Duplicate Feature Titles"
                 count={results.duplicateFeatureTitles.totalFeatures}
               >
                 <div className="space-y-4">
@@ -241,7 +241,7 @@ function App() {
                     <div key={index} className="space-y-2">
                       <div className="font-medium text-gray-700">{item.feature}</div>
                       <div className="text-sm text-gray-500">
-                        Encontrado {item.count} vezes em:
+                        Found {item.count} times in:
                       </div>
                       <CodeBlock code={item.filenames || ''} />
                     </div>
@@ -254,7 +254,7 @@ function App() {
             {results.absenceBackground.absencesBackgrounds.length > 0 && (
               <SmellCard
                 icon={AlertTriangle}
-                title="Ausência de Background"
+                title="Missing Background"
                 count={results.absenceBackground.totalAbsenceBackgrounds}
               >
                 <div className="space-y-4">
@@ -262,7 +262,7 @@ function App() {
                     <div key={index} className="space-y-2">
                       <FileLocation location={item.filename} />
                       <div className="text-sm text-gray-700">
-                        Steps repetidos em {item.scenarios} cenários:
+                        Repeated steps in {item.scenarios} scenarios:
                       </div>
                       <CodeBlock code={item.absence_background || ''} />
                     </div>
@@ -275,7 +275,7 @@ function App() {
             {results.duplicateScenarioTitles.duplicateScenarioTitles.length > 0 && (
               <SmellCard
                 icon={Copy}
-                title="Títulos de Cenário Duplicados"
+                title="Duplicate Scenario Titles"
                 count={results.duplicateScenarioTitles.totalScenarioTitles}
               >
                 <div className="space-y-4">
@@ -283,7 +283,7 @@ function App() {
                     <div key={index} className="space-y-2">
                       <div className="font-medium text-gray-700">{item.title}</div>
                       <div className="text-sm text-gray-500">
-                        Encontrado {item.count} vezes em:
+                        Found {item.count} times in:
                       </div>
                       {item.locations?.map((location, i) => (
                         <FileLocation key={i} location={location} />
@@ -298,7 +298,7 @@ function App() {
             {results.duplicateSteps.duplicateSteps.length > 0 && (
               <SmellCard
                 icon={Repeat}
-                title="Steps Duplicados"
+                title="Duplicate Steps"
                 count={results.duplicateSteps.totalDuplicateSteps}
               >
                 <div className="space-y-4">
@@ -317,17 +317,17 @@ function App() {
             {results.duplicateTestCases.duplicateTestCases.length > 0 && (
               <SmellCard
                 icon={Copy}
-                title="Casos de Teste Duplicados"
+                title="Duplicate Test Cases"
                 count={results.duplicateTestCases.totalTestCases}
               >
                 <div className="space-y-4">
                   {results.duplicateTestCases.duplicateTestCases.map((item, index) => (
                     <div key={index} className="space-y-2">
                       <div className="text-sm text-gray-500">
-                        Encontrado {item.count} vezes em:
+                        Found                        Found {item.count} times in:
                       </div>
                       <CodeBlock code={item.titlesAndFiles || ''} />
-                      <div className="text-sm text-gray-700 mt-2">Conteúdo duplicado:</div>
+                      <div className="text-sm text-gray-700 mt-2">Duplicate content:</div>
                       <CodeBlock code={item.testCaseBody || ''} />
                     </div>
                   ))}
@@ -339,7 +339,7 @@ function App() {
             {results.malformedTests.malformedRegisters.length > 0 && (
               <SmellCard
                 icon={AlertTriangle}
-                title="Testes Malformados"
+                title="Malformed Tests"
                 count={results.malformedTests.totalMalformedTests}
               >
                 <div className="space-y-4">
@@ -358,7 +358,7 @@ function App() {
             {results.startingWithLeftFoot.leftFoots.length > 0 && (
               <SmellCard
                 icon={Footprints}
-                title="Iniciando com o Pé Esquerdo"
+                title="Starting with Left Foot"
                 count={results.startingWithLeftFoot.totalLeftFoots}
               >
                 <div className="space-y-4">
@@ -376,7 +376,7 @@ function App() {
             {results.viciousTags.viciousTags.length > 0 && (
               <SmellCard
                 icon={Tag}
-                title="Tags Viciosas"
+                title="Vicious Tags"
                 count={results.viciousTags.totalViciousTags}
               >
                 <div className="space-y-4">
@@ -387,7 +387,7 @@ function App() {
                         {item.vicious_tag}
                       </div>
                       <div className="text-sm text-gray-500">
-                        Em {item.scenarios} {item.type?.toLowerCase()}s
+                        In {item.scenarios} {item.type?.toLowerCase()}s
                       </div>
                     </div>
                   ))}
